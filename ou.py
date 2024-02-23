@@ -1,11 +1,8 @@
-import re
 import streamlit as st
+import re
 import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse
-
-
-# -------------------------------------------
 
 def RecaptchaV3():
     ANCHOR_URL = 'https://www.google.com/recaptcha/api2/anchor?ar=1&k=6Lcr1ncUAAAAAH3cghg6cOTPGARa8adOf-y9zv2x&co=aHR0cHM6Ly9vdW8ucHJlc3M6NDQz&hl=en&v=pCoGBhjs9s8EhFOHJFe8cqis&size=invisible&cb=ahgyd1gkfkhe'
@@ -26,44 +23,23 @@ def RecaptchaV3():
     answer = re.findall(r'"rresp","(.*?)"', res.text)[0]    
     return answer
 
-# -------------------------------------------
-
-client = requests.Session()
-client.headers.update({
-    'authority': 'ouo.io',
-    'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
-    'accept-language': 'en-GB,en-US;q=0.9,en;q=0.8',
-    'cache-control': 'max-age=0',
-    'referer': 'http://www.google.com/ig/adde?moduleurl=',
-    'upgrade-insecure-requests': '1',
-})
-
-# -------------------------------------------
-# OUO BYPASS
-
-
 def ouo_bypass(url):
     tempurl = url.replace("ouo.press", "ouo.io")
     p = urlparse(tempurl)
     id = tempurl.split('/')[-1]
-    res = client.get(tempurl, impersonate="chrome110")
+    res = client.get(tempurl)
     next_url = f"{p.scheme}://{p.hostname}/go/{id}"
 
     for _ in range(2):
-
         if res.headers.get('Location'): break
-
         bs4 = BeautifulSoup(res.content, 'lxml')
         inputs = bs4.form.findAll("input", {"name": re.compile(r"token$")})
         data = { input.get('name'): input.get('value') for input in inputs }
         data['x-token'] = RecaptchaV3()
-        
         h = {
             'content-type': 'application/x-www-form-urlencoded'
         }
-        
-        res = client.post(next_url, data=data, headers=h, 
-            allow_redirects=False, impersonate="chrome110")
+        res = client.post(next_url, data=data, headers=h, allow_redirects=False)
         next_url = f"{p.scheme}://{p.hostname}/xreallcygo/{id}"
 
     return {
@@ -71,23 +47,19 @@ def ouo_bypass(url):
         'bypassed_link': res.headers.get('Location')
     }
 
-# -------------------------------------------
-
-# Streamlit app
+# Streamlit UI
 st.title("OUO Bypass Streamlit App")
-
-# Input URL
-url = st.text_input("Enter the OUO.IO or OUO.PRESS URL:")
-
+url = st.text_input("Enter the OUO link:", "https://ouo.press/Zu7Vs5")
 if st.button("Bypass"):
-    if url:
-        try:
-            out = ouo_bypass(url)
-            st.success("Bypass Successful!")
-            st.write("Original Link:", out['original_link'])
-            st.write("Bypassed Link:", out['bypassed_link'])
-        except Exception as e:
-            st.error("An error occurred. Please check the URL and try again.")
-            st.error(str(e))
-    else:
-        st.warning("Please enter a URL.")
+    client = requests.Session()
+    client.headers.update({
+        'authority': 'ouo.io',
+        'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+        'accept-language': 'en-GB,en-US;q=0.9,en;q=0.8',
+        'cache-control': 'max-age=0',
+        'referer': 'http://www.google.com/ig/adde?moduleurl=',
+        'upgrade-insecure-requests': '1',
+    })
+    out = ouo_bypass(url)
+    st.write("Original Link:", out['original_link'])
+    st.write("Bypassed Link:", out['bypassed_link'])
